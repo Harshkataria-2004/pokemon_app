@@ -1,0 +1,34 @@
+/* Add this to your CSS file */
+.navbar-nav li {
+  position: relative;
+}
+
+.nav-link-item {
+  color: #CBD5E1;
+  font-size: 16px;
+  text-decoration: none;
+  padding: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin: 0 10px;
+  position: relative;
+}
+
+.nav-link-item:hover {
+  color: #fff; /* Change this color to your preferred hover color */
+}
+
+.nav-link-item.active {
+  color: #fff; /* Change this color to your preferred active link color */
+}
+
+.nav-link-item.active:hover {
+  border-bottom: 2px solid transparent; /* Remove border on hover for active link */
+}
+
+/* Media query for screens less than 576px */
+@media (max-width: 576px) {
+  .nav-link-item {
+    line-height: 1rem;
+  }
+}

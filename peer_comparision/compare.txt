@@ -1,0 +1,749 @@
+import React, { useEffect, useState } from "react";
+import ScrollableTable from "../../components/ScrollableTable/ScrollableTable";
+import { Link } from "react-router-dom";
+
+const Compare = () => {
+  const apiUrl = "https://pokeapi.co/api/v2/pokemon";
+
+  const [pokemon1, setPokemon1] = useState("");
+  const [pokemon2, setPokemon2] = useState("");
+  const [matchingPokemonNames1, setMatchingPokemonNames1] = useState([]);
+  const [matchingPokemonNames2, setMatchingPokemonNames2] = useState([]);
+  const [pokemonData, setPokemonData] = useState(null);
+  const [showDropdown1, setShowDropdown1] = useState(true);
+  const [showDropdown2, setShowDropdown2] = useState(true);
+  const [pokemonDetails1, setPokemonDetails1] = useState(null);
+  const [pokemonDetails2, setPokemonDetails2] = useState(null);
+  const [compareClicked, setCompareClicked] = useState(false);
+  const [moveDetails1, setMoveDetails1] = useState(null);
+  const [moveDetails2, setMoveDetails2] = useState(null);
+
+  const fetchPokemonData = async () => {
+    try {
+      const response = await fetch(`${apiUrl}?limit=10000&offset=0`);
+      const data = await response.json();
+      setPokemonData(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const fetchPokemonDetails = async (name, setPokemonDetails) => {
+    try {
+      const response = await fetch(`${apiUrl}/${name}`);
+      const data = await response.json();
+      setPokemonDetails(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleInputChange = (
+    e,
+    setPokemon,
+    setMatchingNames,
+    setShowDropdown
+  ) => {
+    const value = e.target.value.toLowerCase();
+    setPokemon(value);
+
+    // Filter matching Pokemon names
+    const matchingNames = pokemonData.results
+      .filter((pokemon) => pokemon.name.includes(value))
+      .map((pokemon) => pokemon.name);
+
+    setMatchingNames(matchingNames);
+    setShowDropdown(value !== ""); // Show dropdown only when the input is not empty
+  };
+
+  const handleNameClick = async (
+    name,
+    setPokemon,
+    setShowDropdown,
+    setPokemonDetails
+  ) => {
+    setPokemon(name);
+    setShowDropdown(false); // Close dropdown after selecting an item
+    await fetchPokemonDetails(name, setPokemonDetails);
+  };
+
+  const handleCompareClick = () => {
+    setCompareClicked(true);
+  };
+
+  useEffect(() => {
+    fetchPokemonData();
+
+    const intervalId = setInterval(() => {
+      fetchPokemonData();
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const fetchMoveDetails = async (moveUrl) => {
+    try {
+      const response = await fetch(moveUrl);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchPokemonMoves = async () => {
+      try {
+        const movesData1 = await Promise.all(
+          pokemonDetails1.moves.map(async (move) => {
+            const moveDetails = await fetchMoveDetails(move.move.url);
+            return moveDetails;
+          })
+        );
+
+        const movesData2 = await Promise.all(
+          pokemonDetails2.moves.map(async (move) => {
+            const moveDetails = await fetchMoveDetails(move.move.url);
+            return moveDetails;
+          })
+        );
+
+        setMoveDetails1(movesData1);
+        setMoveDetails2(movesData2);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    if (
+      pokemonDetails1 &&
+      pokemonDetails1.moves &&
+      pokemonDetails2 &&
+      pokemonDetails2.moves
+    ) {
+      fetchPokemonMoves();
+    }
+  }, [pokemonDetails1, pokemonDetails2]);
+
+  const getTypeColor = (type) => {
+    switch (type) {
+      case "normal":
+        return "#A8A77A";
+      case "fire":
+        return "#EE8130";
+      case "water":
+        return "#6390F0";
+      case "electric":
+        return "#F7D02C";
+      case "grass":
+        return "#7AC74C";
+      case "ice":
+        return "#96D9D6";
+      case "fighting":
+        return "#C22E28";
+      case "poison":
+        return "#A33EA1";
+      case "ground":
+        return "#E2BF65";
+      case "flying":
+        return "#A98FF3";
+      case "psychic":
+        return "#F95587";
+      case "bug":
+        return "#A6B91A";
+      case "rock":
+        return "#B6A136";
+      case "ghost":
+        return "#735797";
+      case "dark":
+        return "#705746";
+      case "dragon":
+        return "#6F35FC";
+      case "steel":
+        return "#B7B7CE";
+      case "fairy":
+        return "#D685AD";
+      default:
+        return "#A8A77A"; // Default color for unknown types
+    }
+  };
+
+  console.log("pokemon 1:", pokemon1);
+  console.log("pokemon 2:", pokemon2);
+  console.log("pokemon details 1:", pokemonDetails1);
+  console.log("pokemon details 2:", pokemonDetails2);
+
+  return (
+    <div className="container my-5" style={{ color: "#cbd5e1" }}>
+      <div className="col-12 mt-3">
+        <button
+          className="btn btn-primary"
+          onClick={handleCompareClick}
+          disabled={!pokemon1 || !pokemon2}
+        >
+          Compare
+        </button>
+      </div>
+      <div className="row">
+        <div className="col-6">
+          <div className="row">
+            <div className="col-12">
+              <div
+                className="row"
+                style={{
+                  justifyContent: "center",
+                  alignItems: "center",
+                  padding: "0 2rem",
+                }}
+              >
+                <input
+                  type="text"
+                  placeholder="Enter Pokemon Name or Id"
+                  value={pokemon1}
+                  onChange={(e) =>
+                    handleInputChange(
+                      e,
+                      setPokemon1,
+                      setMatchingPokemonNames1,
+                      setShowDropdown1
+                    )
+                  }
+                  style={{
+                    padding: "0.5rem 0",
+                    borderRadius: "0.25rem",
+                  }}
+                />
+                {showDropdown1 && (
+                  <div
+                    style={{
+                      backgroundColor: "#334155",
+                      color: "#CBD5E1",
+                      borderRadius: "0.5rem",
+                    }}
+                  >
+                    {matchingPokemonNames1.slice(0, 5).map((name, index) => (
+                      <div
+                        style={{
+                          textTransform: "capitalize",
+                          padding: "0.25rem 0",
+                          cursor: "default",
+                        }}
+                        key={index}
+                        onClick={() =>
+                          handleNameClick(
+                            name,
+                            setPokemon1,
+                            setShowDropdown1,
+                            setPokemonDetails1
+                          )
+                        }
+                        onMouseOver={(e) =>
+                          (e.currentTarget.style.color = "white")
+                        }
+                        onMouseOut={(e) =>
+                          (e.currentTarget.style.color = "#CBD5E1")
+                        }
+                      >
+                        {name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            {pokemon1 && pokemonDetails1 && compareClicked && (
+              <div
+                className="col-12"
+                style={{
+                  marginTop: "1rem",
+                }}
+              >
+                <div
+                  style={{
+                    backgroundColor: getTypeColor(
+                      pokemonDetails1.types[0].type.name
+                    ),
+                    borderRadius: "1rem",
+                    margin: "1rem",
+                  }}
+                  className="row"
+                >
+                  <div
+                    className="col-12"
+                    style={{
+                      textAlign: "center",
+                      fontSize: "2rem",
+                      color: "white",
+                      textTransform: "capitalize",
+                      borderBottom: "1px solid white",
+                    }}
+                  >
+                    {pokemonDetails1.name}
+                  </div>
+                  <div
+                    className="col-12"
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <img
+                      src={
+                        pokemonDetails1.sprites.other[`official-artwork`]
+                          .front_default
+                      }
+                      alt=""
+                      style={{ width: "20rem", height: "20rem" }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+            {pokemon1 && pokemonDetails1 && compareClicked && (
+              <div className="col-12">
+                <div
+                  className=""
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-evenly",
+                    alignItems: "center",
+                    backgroundColor: "#293444",
+                    borderRadius: "1rem",
+                    marginTop: "1rem",
+                  }}
+                >
+                  <div>
+                    <div style={{ color: "white", fontWeight: "bold" }}>
+                      Height
+                    </div>
+                    <div style={{ color: "white", fontSize: "2rem" }}>
+                      {pokemonDetails1.height}m
+                    </div>
+                  </div>
+                  <div className="">
+                    <div style={{ color: "white", fontWeight: "bold" }}>
+                      Weight
+                    </div>
+                    <div style={{ color: "white", fontSize: "2rem" }}>
+                      {pokemonDetails1.weight}Kg
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {pokemon1 && pokemonDetails1 && compareClicked && (
+              <div className="col-12">
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-evenly",
+                    alignItems: "center",
+                    backgroundColor: "#293444",
+                    borderRadius: "1rem",
+                    padding: "1rem",
+                    marginTop: "1rem",
+                  }}
+                >
+                  <div
+                    className="col-2"
+                    style={{
+                      fontSize: "1.5rem",
+                      color: "white",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Type:
+                  </div>
+                  <div className="col-10">
+                    {pokemonDetails1.types.map((pok, index) => {
+                      return (
+                        <span
+                          key={index}
+                          style={{
+                            color: "white",
+                            backgroundColor: getTypeColor(pok.type.name),
+                            padding: "0.25rem 1rem",
+                            borderRadius: "1rem",
+                            marginRight: "1rem", // Adjust the margin as needed
+                            display: "inline-block", // Ensures proper inline behavior
+                          }}
+                        >
+                          {pok.type.name}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+            {pokemon1 && pokemonDetails1 && compareClicked && (
+              <div className="col-12">
+                <div
+                  className=""
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-evenly",
+                    alignItems: "center",
+                    backgroundColor: "#293444",
+                    borderRadius: "1rem",
+                    padding: "1rem",
+                    marginTop: "1rem",
+                  }}
+                >
+                  <div className="row" style={{ padding: "1rem" }}>
+                    <div className="col-12">
+                      <h2 style={{ color: "white" }}>Base Stats</h2>
+                    </div>
+                    {pokemonDetails1.stats.map((stat, index) => {
+                      return (
+                        <div key={index} className="mb-3">
+                          <strong style={{ color: "white" }}>
+                            {stat.stat.name}
+                          </strong>
+                          <div className="progress mt-1">
+                            <div
+                              className="progress-bar"
+                              role="progressbar"
+                              style={{
+                                width: `${(stat.base_stat / 255) * 100}%`,
+                                backgroundColor: getTypeColor(
+                                  pokemonDetails1.types[0].type.name
+                                ),
+                              }}
+                              aria-valuenow={stat.base_stat}
+                              aria-valuemin="0"
+                              aria-valuemax="255"
+                            >
+                              {stat.base_stat}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+            {pokemon1 && pokemonDetails1 && compareClicked && (
+              <div className="col-12">
+                <div
+                  className=""
+                  style={{
+                    backgroundColor: "#293444",
+                    borderRadius: "1rem",
+                    padding: "1rem",
+                    marginTop: "1rem",
+                  }}
+                >
+                  <ScrollableTable moves={moveDetails1} />
+                </div>
+              </div>
+            )}
+            {pokemon1 && pokemonDetails1 && compareClicked && (
+              <div className="col-12">
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-evenly",
+                    alignItems: "center",
+                    backgroundColor: "#293444",
+                    borderRadius: "1rem",
+                    padding: "1rem",
+                    marginTop: "1rem",
+                  }}
+                >
+                  <Link
+                    style={{ color: "white", textDecoration: "none" }}
+                    to={`/pokemon/${pokemonDetails1.name}`}
+                  >
+                    Details
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="col-6">
+          <div className="row">
+            <div
+              className="row"
+              style={{
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Enter Pokemon Name or Id"
+                value={pokemon2}
+                onChange={(e) =>
+                  handleInputChange(
+                    e,
+                    setPokemon2,
+                    setMatchingPokemonNames2,
+                    setShowDropdown2
+                  )
+                }
+                style={{
+                  padding: "0.5rem 0",
+                  borderRadius: "0.25rem",
+                }}
+              />
+              {showDropdown2 && (
+                <div
+                  style={{
+                    backgroundColor: "#334155",
+                    color: "#CBD5E1",
+                    borderRadius: "0.5rem",
+                  }}
+                >
+                  {matchingPokemonNames2.slice(0, 5).map((name, index) => (
+                    <div
+                      style={{
+                        textTransform: "capitalize",
+                        padding: "0.25rem 0",
+                        cursor: "default",
+                      }}
+                      key={index}
+                      onClick={() =>
+                        handleNameClick(
+                          name,
+                          setPokemon2,
+                          setShowDropdown2,
+                          setPokemonDetails2
+                        )
+                      }
+                      onMouseOver={(e) =>
+                        (e.currentTarget.style.color = "white")
+                      }
+                      onMouseOut={(e) =>
+                        (e.currentTarget.style.color = "#CBD5E1")
+                      }
+                    >
+                      {name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {pokemon2 && pokemonDetails2 && compareClicked && (
+              <div
+                className="col-12"
+                style={{
+                  marginTop: "1rem",
+                }}
+              >
+                <div
+                  style={{
+                    backgroundColor: getTypeColor(
+                      pokemonDetails2.types[0].type.name
+                    ),
+                    borderRadius: "1rem",
+                    margin: "1rem",
+                  }}
+                  className="row"
+                >
+                  <div
+                    className="col-12"
+                    style={{
+                      textAlign: "center",
+                      fontSize: "2rem",
+                      color: "white",
+                      textTransform: "capitalize",
+                      borderBottom: "1px solid white",
+                    }}
+                  >
+                    {pokemonDetails2.name}
+                  </div>
+                  <div
+                    className="col-12"
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <img
+                      src={
+                        pokemonDetails2.sprites.other[`official-artwork`]
+                          .front_default
+                      }
+                      alt=""
+                      style={{ width: "20rem", height: "20rem" }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+            {pokemon2 && pokemonDetails2 && compareClicked && (
+              <div className="col-12">
+                <div
+                  className=""
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-evenly",
+                    alignItems: "center",
+                    backgroundColor: "#293444",
+                    borderRadius: "1rem",
+                    marginTop: "1rem",
+                  }}
+                >
+                  <div>
+                    <div style={{ color: "white", fontWeight: "bold" }}>
+                      Height
+                    </div>
+                    <div style={{ color: "white", fontSize: "2rem" }}>
+                      {pokemonDetails2.height}m
+                    </div>
+                  </div>
+                  <div className="">
+                    <div style={{ color: "white", fontWeight: "bold" }}>
+                      Weight
+                    </div>
+                    <div style={{ color: "white", fontSize: "2rem" }}>
+                      {pokemonDetails2.weight}Kg
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {pokemon2 && pokemonDetails2 && compareClicked && (
+              <div className="col-12">
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-evenly",
+                    alignItems: "center",
+                    backgroundColor: "#293444",
+                    borderRadius: "1rem",
+                    padding: "1rem",
+                    marginTop: "1rem",
+                  }}
+                >
+                  <div
+                    className="col-2"
+                    style={{
+                      fontSize: "1.5rem",
+                      color: "white",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Type:
+                  </div>
+                  <div className="col-10">
+                    {pokemonDetails2.types.map((pok, index) => {
+                      return (
+                        <span
+                          key={index}
+                          style={{
+                            color: "white",
+                            backgroundColor: getTypeColor(pok.type.name),
+                            padding: "0.25rem 1rem",
+                            borderRadius: "1rem",
+                            marginRight: "1rem", // Adjust the margin as needed
+                            display: "inline-block", // Ensures proper inline behavior
+                          }}
+                        >
+                          {pok.type.name}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+            {pokemon2 && pokemonDetails2 && compareClicked && (
+              <div className="col-12">
+                <div
+                  className=""
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-evenly",
+                    alignItems: "center",
+                    backgroundColor: "#293444",
+                    borderRadius: "1rem",
+                    padding: "1rem",
+                    marginTop: "1rem",
+                  }}
+                >
+                  <div className="row" style={{ padding: "1rem" }}>
+                    <div className="col-12">
+                      <h2 style={{ color: "white" }}>Base Stats</h2>
+                    </div>
+                    {pokemonDetails2.stats.map((stat, index) => {
+                      return (
+                        <div key={index} className="mb-3">
+                          <strong style={{ color: "white" }}>
+                            {stat.stat.name}
+                          </strong>
+                          <div className="progress mt-1">
+                            <div
+                              className="progress-bar"
+                              role="progressbar"
+                              style={{
+                                width: `${(stat.base_stat / 255) * 100}%`,
+                                backgroundColor: getTypeColor(
+                                  pokemonDetails2.types[0].type.name
+                                ),
+                              }}
+                              aria-valuenow={stat.base_stat}
+                              aria-valuemin="0"
+                              aria-valuemax="255"
+                            >
+                              {stat.base_stat}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+            {pokemon2 && pokemonDetails2 && compareClicked && (
+              <div className="col-12">
+                <div
+                  className=""
+                  style={{
+                    backgroundColor: "#293444",
+                    borderRadius: "1rem",
+                    padding: "1rem",
+                    marginTop: "1rem",
+                  }}
+                >
+                  <ScrollableTable moves={moveDetails2} />
+                </div>
+              </div>
+            )}
+            {pokemon2 && pokemonDetails2 && compareClicked && (
+              <div className="col-12">
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-evenly",
+                    alignItems: "center",
+                    backgroundColor: "#293444",
+                    borderRadius: "1rem",
+                    padding: "1rem",
+                    marginTop: "1rem",
+                  }}
+                >
+                  <Link
+                    style={{ color: "white", textDecoration: "none" }}
+                    to={`/pokemon/${pokemonDetails2.name}`}
+                  >
+                    Details
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Compare;

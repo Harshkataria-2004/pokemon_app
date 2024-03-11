@@ -1,0 +1,27 @@
+.table-container {
+  max-height: 400px; /* Adjust the max height as needed */
+  overflow-y: auto;
+}
+
+.scrollable-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid red;
+  text-align: center;
+}
+thead {
+  background-color: #212a37;
+}
+th{
+	padding: 1rem 0;
+}
+.scrollable-table,
+.scrollable-table th,
+.scrollable-table td {
+  border: 1px solid #1e262b;
+}
+
+thead {
+  position: sticky;
+  top: 0;
+}
